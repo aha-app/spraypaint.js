@@ -15,6 +15,10 @@ export class IDMap {
     return this.data[key]
   }
 
+  findByKey(key: string) {
+    return this.data[key]
+  }
+
   findAll(models: SpraypaintBase[]) {
     let records: SpraypaintBase[] = []
     models.forEach(m => {

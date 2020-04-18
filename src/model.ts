@@ -574,7 +574,7 @@ export class SpraypaintBase {
   reset(): void {
     if (this.klass.sync) {
       this.klass.store.updateOrCreate(this)
-      this.listen()
+      // Call listen when the model is used. this.listen()
     }
     this._originalAttributes = cloneDeep(this._attributes)
     this._originalRelationships = this.relationshipResourceIdentifiers(

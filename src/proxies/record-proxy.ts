@@ -9,6 +9,26 @@ export class RecordProxy<T extends SpraypaintBase> implements IResultProxy<T> {
   constructor(record: T, raw_json: JsonapiResponseDoc) {
     this._record = record
     this._raw_json = raw_json
+
+    return new Proxy(this, {
+      // Map calls for attributes on the relation to the model.
+      get(relation, prop, receiver) {
+        if (prop in relation) {
+          return relation[prop]
+        } else {
+          return relation._record[prop]
+        }
+      },
+      set(relation, prop, value) {
+        if (prop in relation) {
+          relation[prop] = value
+          return true
+        } else {
+          relation._record[prop] = value
+          return true
+        }
+      }
+    })
   }
 
   get raw(): JsonapiResponseDoc {

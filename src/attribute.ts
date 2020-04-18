@@ -65,6 +65,9 @@ export class Attribute<T = any> {
 
   // The model calls this getter
   getter(context: SpraypaintBase): any {
+    // Listen for store updates using this context object, which is proxied by
+    // observer-util. Only the first call to listen matter, so this is cheap.
+    context.listen()
     return context.attributes[this.name]
   }
 
