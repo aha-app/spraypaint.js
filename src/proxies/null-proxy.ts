@@ -19,4 +19,6 @@ export class NullProxy implements IResultProxy<null> {
   get meta(): Record<string, any> {
     return this.raw.meta || {}
   }
+
+  reload() {}
 }

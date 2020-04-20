@@ -1,31 +1,36 @@
 import { SpraypaintBase } from "../model"
 import { IResultProxy } from "./index"
 import { JsonapiResponseDoc } from "../jsonapi-spec"
+import { Scope } from "../scope"
 
 export class CollectionProxy<T extends SpraypaintBase>
   implements IResultProxy<T> {
   private _raw_json: JsonapiResponseDoc
   private _collection: T[]
+  private _scope: Scope<T> | undefined
 
-  constructor(collection: T[], raw_json: JsonapiResponseDoc = { data: [] }) {
+  constructor(
+    collection: T[],
+    raw_json: JsonapiResponseDoc = { data: [] },
+    scope?: Scope<T>
+  ) {
     this._collection = collection
     this._raw_json = raw_json
+    this._scope = scope
 
     return new Proxy(this, {
-      get(collection, prop) {
-        if (prop in collection) {
-          return collection[prop]
-        } else if (prop in collection._collection) {
-          return collection._collection[prop]
+      get(target, prop, receiver) {
+        if (prop in target._collection) {
+          return Reflect.get(target._collection, prop, receiver._collection)
+        } else {
+          return Reflect.get(target, prop, receiver)
         }
       },
-      has(collection, prop) {
-        if (prop in collection) {
-          return true
-        } else if (prop in collection._collection) {
+      has(target, prop) {
+        if (prop in target._collection) {
           return true
         } else {
-          return false
+          return Reflect.has(target, prop)
         }
       }
     })
@@ -41,5 +46,13 @@ export class CollectionProxy<T extends SpraypaintBase>
 
   get meta(): Record<string, any> {
     return this.raw.meta || {}
+  }
+
+  async reload() {
+    if (this._scope) {
+      const newCollection = await this._scope.reload()
+      this._collection = <T[]>newCollection.data
+      this._raw_json = newCollection.raw
+    }
   }
 }

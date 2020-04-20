@@ -1,4 +1,5 @@
 import { SpraypaintBase } from "./model"
+import { isObservable } from "@nx-js/observer-util"
 
 export type Attr<T> = (() => T) | { new (...args: any[]): T & object }
 
@@ -65,9 +66,12 @@ export class Attribute<T = any> {
 
   // The model calls this getter
   getter(context: SpraypaintBase): any {
+    // TODO: This is a hack. It would be nice to be able to provide a hook so
+    // the application code can do this itself.
+    //
     // Listen for store updates using this context object, which is proxied by
     // observer-util. Only the first call to listen matter, so this is cheap.
-    context.listen()
+    if (isObservable(context)) context.listen()
     return context.attributes[this.name]
   }
 

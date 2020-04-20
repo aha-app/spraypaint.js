@@ -5,7 +5,12 @@ import {
   IncludeArgHash,
   IncludeScopeHash
 } from "./util/include-directive"
-import { CollectionProxy, RecordProxy, NullProxy } from "./proxies"
+import {
+  IResultProxy,
+  CollectionProxy,
+  RecordProxy,
+  NullProxy
+} from "./proxies"
 import { Request } from "./request"
 import { refreshJWT } from "./util/refresh-jwt"
 import { cloneDeep } from "./util/clonedeep"
@@ -34,6 +39,7 @@ export type FieldArg = FieldScope | string[]
 export type WhereClause = any
 export type StatsScope = Record<string, string | string[]>
 export type IncludeScope = string | IncludeArgHash | (string | IncludeArgHash)[]
+export type ScopeTerminal = "all" | "first" | "find" | "unknown"
 
 export type AnyRecord = Record<string, any>
 
@@ -51,15 +57,32 @@ export class Scope<T extends SpraypaintBase = SpraypaintBase> {
   private _include: IncludeScopeHash = {}
   private _stats: StatsScope = {}
   private _extraParams: any = {}
+  private _terminal: ScopeTerminal = "unknown"
+  private _terminalId: string | number = ""
 
   constructor(model: Constructor<T> | typeof SpraypaintBase) {
     this.model = (model as any) as typeof SpraypaintBase
+  }
+
+  async reload(): Promise<IResultProxy<T>> {
+    switch (this._terminal) {
+      case "all":
+        return this.all()
+      case "find":
+        return this.find(this._terminalId)
+      case "first":
+        return this.first()
+      default:
+        throw Error(`Unhandled scope terminal ${this._terminal}`)
+    }
   }
 
   async all(): Promise<CollectionProxy<T>> {
     const response = (await this._fetch(
       this.model.url()
     )) as JsonapiCollectionDoc
+
+    this._terminal = "all"
 
     return this._buildCollectionResult(response)
   }
@@ -336,16 +359,18 @@ export class Scope<T extends SpraypaintBase = SpraypaintBase> {
 
     record = this.model.fromJsonapi(rawRecord, jsonResult)
 
-    return new RecordProxy(record, jsonResult)
+    return new RecordProxy(record, jsonResult, this)
   }
 
-  private _buildCollectionResult(jsonResult: JsonapiCollectionDoc) {
+  private _buildCollectionResult(
+    jsonResult: JsonapiCollectionDoc
+  ): CollectionProxy<T> {
     const recordArray: T[] = []
 
     jsonResult.data.forEach(record => {
       recordArray.push(this.model.fromJsonapi(record, jsonResult))
     })
 
-    return new CollectionProxy(recordArray, jsonResult)
+    return new CollectionProxy(recordArray, jsonResult, this)
   }
 }

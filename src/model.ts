@@ -582,6 +582,11 @@ export class SpraypaintBase {
     )
   }
 
+  // Trigger a reload of the model from the server.
+  reload(): void {
+    if (this.isPersisted && this.id) this.klass.find(this.id)
+  }
+
   rollback(): void {
     this._attributes = cloneDeep(this._originalAttributes)
   }
@@ -1070,6 +1075,22 @@ export class SpraypaintBase {
       if (this.klass.linkList.indexOf(attributeName) > -1) {
         this._links[attributeName] = links[key]
       }
+    }
+  }
+
+  static fromAttrs(
+    attrs: Array<Record<string, any>> | Record<string, any>
+  ): CollectionProxy<SpraypaintBase> | SpraypaintBase {
+    if (attrs instanceof Array) {
+      const models = attrs.map(attr => {
+        const model = new this(attr)
+        model.reset()
+        model.isPersisted = true
+        return model
+      })
+      return new CollectionProxy(models, { data: [] })
+    } else {
+      return new this(attrs)
     }
   }
 }

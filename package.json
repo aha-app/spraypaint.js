@@ -50,6 +50,7 @@
     ]
   },
   "dependencies": {
+    "@nx-js/observer-util": "4.2.2",
     "eventbusjs": "^0.2.0",
     "inflected": "^2.0.3",
     "lodash": "^4.17.5",
