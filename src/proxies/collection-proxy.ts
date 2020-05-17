@@ -26,8 +26,15 @@ export class CollectionProxy<T extends SpraypaintBase>
           return Reflect.get(target, prop, receiver)
         }
       },
+      set(target, prop, value) {
+        if (prop in this) {
+          return Reflect.set(target, prop, value)
+        } else {
+          return Reflect.set(target._collection, prop, value)
+        }
+      },
       has(target, prop) {
-        if (prop in target._collection) {
+        if (Reflect.has(target._collection, prop)) {
           return true
         } else {
           return Reflect.has(target, prop)
