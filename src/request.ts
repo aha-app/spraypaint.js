@@ -151,7 +151,7 @@ export class Request {
         throw new ResponseError(response, "record not found")
       } else {
         // Bad JSON, for instance an errors payload
-        throw new ResponseError(response, "invalid json")
+        throw new ResponseError(response, response.statusText)
       }
     }
 
