@@ -71,7 +71,12 @@ export class Attribute<T = any> {
     //
     // Listen for store updates using this context object, which is proxied by
     // observer-util. Only the first call to listen matter, so this is cheap.
+    //
+    // We want the observable version of the object to listen so that any
+    // changes in the global cache update the observable state - triggering
+    // a React redraw.
     if (isObservable(context)) context.listen()
+
     return context.attributes[this.name]
   }
 
