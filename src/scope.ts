@@ -68,10 +68,12 @@ export class Scope<T extends SpraypaintBase = SpraypaintBase> {
     switch (this._terminal) {
       case "all":
         return this.all()
+      /*
       case "find":
         return this.find(this._terminalId)
       case "first":
         return this.first()
+        */
       default:
         throw Error(`Unhandled scope terminal ${this._terminal}`)
     }
@@ -87,13 +89,13 @@ export class Scope<T extends SpraypaintBase = SpraypaintBase> {
     return this._buildCollectionResult(response)
   }
 
-  async find(id: string | number): Promise<RecordProxy<T>> {
+  async find(id: string | number): Promise<T> {
     const json = (await this._fetch(this.model.url(id))) as JsonapiResourceDoc
 
     return this._buildRecordResult(json)
   }
 
-  async first(): Promise<RecordProxy<T> | NullProxy> {
+  async first(): Promise<T> {
     const newScope = this.per(1)
     let rawResult
 
@@ -340,10 +342,8 @@ export class Scope<T extends SpraypaintBase = SpraypaintBase> {
     return response.jsonPayload
   }
 
-  private _buildRecordResult(jsonResult: JsonapiResourceDoc): RecordProxy<T>
-  private _buildRecordResult(
-    jsonResult: JsonapiCollectionDoc
-  ): RecordProxy<T> | NullProxy
+  private _buildRecordResult(jsonResult: JsonapiResourceDoc): T
+  private _buildRecordResult(jsonResult: JsonapiCollectionDoc): T
   private _buildRecordResult(jsonResult: JsonapiSuccessDoc) {
     let record: T
 
@@ -351,7 +351,7 @@ export class Scope<T extends SpraypaintBase = SpraypaintBase> {
     if (jsonResult.data instanceof Array) {
       rawRecord = jsonResult.data[0]
       if (!rawRecord) {
-        return new NullProxy(jsonResult)
+        return null
       }
     } else {
       rawRecord = jsonResult.data
@@ -359,7 +359,7 @@ export class Scope<T extends SpraypaintBase = SpraypaintBase> {
 
     record = this.model.fromJsonapi(rawRecord, jsonResult)
 
-    return new RecordProxy(record, jsonResult, this)
+    return record
   }
 
   private _buildCollectionResult(
