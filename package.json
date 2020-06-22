@@ -1,5 +1,5 @@
 {
-  "name": "spraypaint",
+  "name": "@aha-app/spraypaint",
   "version": "0.11.0",
   "description": "Graphiti Client / Javascript ORM",
   "main": "lib/index.js",
