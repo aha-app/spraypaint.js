@@ -1,6 +1,7 @@
 import { Attribute, AttrRecord, Attr } from "./attribute"
 import { SpraypaintBase } from "./model"
 import { JsonapiTypeRegistry } from "./jsonapi-type-registry"
+import { isObservable } from "@nx-js/observer-util"
 
 export interface AssociationRecord<T extends SpraypaintBase>
   extends AttrRecord<T> {
@@ -47,7 +48,19 @@ export class SingleAssociationBase<T extends SpraypaintBase>
   }
 
   getter(context: SpraypaintBase) {
+    // TODO: This is a hack. It would be nice to be able to provide a hook so
+    // the application code can do this itself.
+    //
+    // Listen for store updates using this context object, which is proxied by
+    // observer-util. Only the first call to listen matter, so this is cheap.
+    //
+    // We want the observable version of the object to listen so that any
+    // changes in the global cache update the observable state - triggering
+    // a React redraw.
+
     let gotten = context.relationships[this.name] as SpraypaintBase | null
+    if (gotten && isObservable(context)) gotten.listen()
+
     if (gotten && wasDestroyed(gotten)) {
       delete context.relationships[this.name]
     }
@@ -97,6 +110,21 @@ export class HasMany<T extends SpraypaintBase> extends Attribute<T[]>
     if (!gotten) {
       this.setter(context, [])
       return context.relationships[this.name]
+    }
+
+    // TODO: This is a hack. It would be nice to be able to provide a hook so
+    // the application code can do this itself.
+    //
+    // Listen for store updates using this context object, which is proxied by
+    // observer-util. Only the first call to listen matter, so this is cheap.
+    //
+    // We want the observable version of the object to listen so that any
+    // changes in the global cache update the observable state - triggering
+    // a React redraw.
+    if (gotten && isObservable(context)) {
+      gotten.forEach(item => {
+        if (item) item.listen()
+      })
     }
 
     let index = gotten.length

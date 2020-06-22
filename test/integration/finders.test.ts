@@ -21,15 +21,15 @@ describe("Model finders", () => {
     })
 
     it("returns a promise that resolves the correct instance", async () => {
-      const { data } = await Person.find(1)
-      expect(data)
+      const person = await Person.find(1)
+      expect(person)
         .to.be.instanceof(Person)
         .and.have.property("id", "1")
     })
 
     it("assigns attributes correctly", async () => {
-      const { data } = await Person.find(1)
-      expect(data).to.have.property("firstName", "John")
+      const person = await Person.find(1)
+      expect(person).to.have.property("firstName", "John")
     })
 
     describe("when API response returns a different type than the caller", () => {
@@ -44,9 +44,9 @@ describe("Model finders", () => {
       })
 
       it("resolves to the correct class", async () => {
-        const { data } = await Person.find(1)
+        const person = await Person.find(1)
 
-        expect(data).to.be.instanceof(Author)
+        expect(person).to.be.instanceof(Author)
       })
     })
   })
@@ -66,9 +66,9 @@ describe("Model finders", () => {
       })
 
       it("returns a promise that resolves the correct instances", async () => {
-        const { data } = await Person.first()
+        const person = await Person.first()
 
-        expect(data)
+        expect(person)
           .to.be.instanceof(Person)
           .have.property("id", "1")
       })
@@ -86,16 +86,17 @@ describe("Model finders", () => {
       })
 
       it("returns a null record proxy", async () => {
-        const { data } = await Person.first()
+        const person = await Person.first()
 
-        expect(data).to.be.null
+        expect(person).to.be.null
       })
 
-      it("returns a record with all metadata", async () => {
-        const { meta } = await Person.first()
+      // first() returns an object now, so meta is not publicly accessible
+      // it("returns a record with all metadata", async () => {
+      //   const person = await Person.first()
 
-        expect(meta).to.deep.equal({ foo: "bar" })
-      })
+      //     expect(person.__meta__).to.deep.equal({ foo: "bar" })
+      // })
     })
   })
 

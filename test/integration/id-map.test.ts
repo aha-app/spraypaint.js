@@ -49,22 +49,23 @@ describe("ID Map", () => {
       })
 
       it("does not add to the idmap", async () => {
-        let { data } = await Author.find(1)
+        let author = await Author.find(1)
         let stored = ApplicationRecord.store.data
         expect(Object.keys(stored).length).to.eq(0)
       })
     })
 
     it("is added to the ID map", async () => {
-      let { data } = await Author.find(1)
+      let author = await Author.find(1)
       let stored = ApplicationRecord.store.data
       expect(Object.keys(stored)[0]).to.eq("authors-1")
-      expect(stored["authors-1"]).to.deep.eq(data.attributes)
+      expect(stored["authors-1"]).to.deep.eq(author.attributes)
     })
 
     it("syncs non-dirty attributes with id map", async () => {
-      let author1 = (await Author.find(1)).data
+      let author1 = await Author.find(1)
       expect(author1.firstName).to.eq("John")
+      author1.listen()
 
       fetchMock.restore()
       fetchMock.get(
@@ -72,13 +73,14 @@ describe("ID Map", () => {
         responsePayload("Jane")
       )
 
-      let author2 = (await Author.find(1)).data
+      let author2 = await Author.find(1)
       expect(author2.firstName).to.eq("Jane")
       expect(author1.firstName).to.eq("Jane")
     })
 
     it("does not see mark newly-synced attributes as dirty", async () => {
-      let author1 = (await Author.find(1)).data
+      let author1 = await Author.find(1)
+      author1.listen()
       expect(author1.firstName).to.eq("John")
 
       fetchMock.restore()
@@ -93,7 +95,8 @@ describe("ID Map", () => {
     })
 
     it("does not sync dirty attributes with id map", async () => {
-      let author1 = (await Author.find(1)).data
+      let author1 = await Author.find(1)
+      author1.listen()
       author1.firstName = "updated"
 
       fetchMock.restore()
@@ -102,14 +105,15 @@ describe("ID Map", () => {
         responsePayload("Jane")
       )
 
-      let author2 = (await Author.find(1)).data
+      let author2 = await Author.find(1)
       expect(author2.firstName).to.eq("Jane")
       expect(author1.firstName).to.eq("updated")
     })
 
     describe("when implementing afterSync hook", () => {
       it("fires after sync, passing changes as an argument", async () => {
-        let author1 = (await Author.find(1)).data
+        let author1 = await Author.find(1)
+        author1.listen()
         author1.afterSync = sinon.spy()
 
         fetchMock.restore()
@@ -118,7 +122,7 @@ describe("ID Map", () => {
           responsePayload("Jane")
         )
 
-        let author2 = (await Author.find(1)).data
+        let author2 = await Author.find(1)
         expect(author1.afterSync).to.have.been.calledWith({
           firstName: ["John", "Jane"]
         })
@@ -126,9 +130,10 @@ describe("ID Map", () => {
 
       describe("when store updates, but no changes", () => {
         it("does not fire the hook", async () => {
-          let author1 = (await Author.find(1)).data
+          let author1 = await Author.find(1)
+          author1.listen()
           author1.afterSync = sinon.spy()
-          let author2 = (await Author.find(1)).data
+          let author2 = await Author.find(1)
           let called = (<any>author1.afterSync).called
           expect(called).to.eq(false)
         })
@@ -137,19 +142,23 @@ describe("ID Map", () => {
 
     describe("when syncing, then unlistening", () => {
       it("no longer syncs with id map", async () => {
-        let author1 = (await Author.find(1)).data
+        let author1 = await Author.find(1)
+        author1.listen()
         author1.firstName = "updated"
         author1.unlisten()
-        let author2 = (await Author.find(1)).data
+        let author2 = await Author.find(1)
         expect(author1.firstName).to.eq("updated")
       })
 
       it("no longer sync on manual relationship sync", async () => {
-        let author1 = (await Author.find(1)).data
+        let author1 = await Author.find(1)
+        author1.listen()
+
         let book1 = new Book()
+        book1.listen()
         author1.books = [book1]
         author1.unlisten()
-        let author2 = (await Author.find(1)).data
+        let author2 = await Author.find(1)
         let book2 = new Book()
         author2.books = [book2]
         author2.syncRelationships()
@@ -179,9 +188,11 @@ describe("ID Map", () => {
       })
 
       let response = await Author.find(1)
-      let author1 = response.data
+      let author1 = response
+      author1.listen()
       response = await Author.find(1)
-      let author2 = response.data
+      let author2 = response
+      author2.listen()
 
       // not synced prior to save
       author1.firstName = "updated"
@@ -243,12 +254,13 @@ describe("ID Map", () => {
         book = new Book({ id: 1, title: "original" })
         book.isPersisted = true
         author = new Author({ id: 1, books: [book] })
+        author.books.forEach(book => book.listen())
       })
 
       it("is also updated within the relationship", async () => {
         expect(author.books[0].title).to.eq("original")
-        let { data } = await Book.find(1)
-        expect(data.title).to.eq("updated")
+        let book = await Book.find(1)
+        expect(book.title).to.eq("updated")
         expect(author.books[0].title).to.eq("updated")
       })
     })
@@ -262,6 +274,7 @@ describe("ID Map", () => {
         author.isPersisted = true
         book = new Book({ id: 1, author })
         book.isPersisted = true
+        book.author.listen()
       })
 
       it("is also updated within the relationship", async () => {
@@ -279,6 +292,7 @@ describe("ID Map", () => {
         bio = new Bio({ id: 1, description: "original" })
         bio.isPersisted = true
         author = new Author({ id: 1, bio })
+        author.bio.listen()
         author.isPersisted = true
       })
 
@@ -448,9 +462,9 @@ describe("ID Map", () => {
 
   describe("when destroyed", () => {
     it("is removed from the ID map", async () => {
-      let { data } = await Author.find(1)
+      let author = await Author.find(1)
       expect(ApplicationRecord.store.count).to.eq(1)
-      await data.destroy()
+      await author.destroy()
       expect(ApplicationRecord.store.count).to.eq(0)
     })
 
